@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nabha Civil Hospital - Doctor Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f4f6f9; }
+        header { background-color: #8B0000; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .container { padding: 30px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
+        .badge { padding: 5px 10px; border-radius: 20px; color: white; font-weight: bold; font-size: 12px; }
+        .badge.CRITICAL { background-color: #ff4d4d; }
+        .badge.HIGH { background-color: #ff944d; }
+        .badge.MODERATE { background-color: #ffcc4d; color: #333; }
+        .badge.LOW { background-color: #5cb85c; }
+        button { background-color: #8B0000; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #a00000; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>🏥 Nabha Civil Hospital Central Hub</h2>
+    <div><strong>Doctor Dashboard:</strong> Dr. Singh (OPD Unit 11)</div>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h3>Live Rural Patient Sync Queue</h3>
+        <p>This web panel reflects live synchronized data pushed from remote field tablets over 2G nodes.</p>
+        <button onclick="fetchQueue()">🔄 Force Refresh Queue</button>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Age</th>
+                    <th>ABHA Card ID</th>
+                    <th>Symptoms (Punjabi Voice Parsed)</th>
+                    <th>Triage Urgency</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="queue-table-body">
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #777;">No active patients in queue. Connect your mobile app and hit sync.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function fetchQueue() {
+        try {
+            const response = await fetch('http://localhost:8080/api/prescription/queue');
+            const data = await response.json();
+            
+            const tbody = document.getElementById('queue-table-body');
+            tbody.innerHTML = ''; 
+            
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #777;">No active patients in queue.</td></tr>`;
+                return;
+            }
+
+            data.forEach(patient => {
+                const row = `
+                    <tr>
+                        <td><strong>${patient.name}</strong></td>
+                        <td>${patient.age}</td>
+                        <td>${patient.abhaId || 'N/A'}</td>
+                        <td><i>"${patient.symptoms}"</i></td>
+                        <td><span class="badge ${patient.triageStatus}">${patient.triageStatus}</span></td>
+                        <td><button onclick="alert('Initiating low-bandwidth WebRTC channel for ${patient.name}')">📞 Start Call</button></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error('Error connecting to Spring Boot engine:', error);
+        }
+    }
+    setInterval(fetchQueue, 5000);
+</script>
+</body>
+</html>
